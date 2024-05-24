@@ -155,7 +155,7 @@
         target_lang: targetLang.value
       };
 
-      fetch('/translate', {
+      fetch(`${window.location.origin}/translate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
