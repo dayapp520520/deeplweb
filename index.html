@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>翻译应用程序</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  <style>
+    body {
+      padding-top: 50px;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .card {
+      border: none;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      transition: box-shadow 0.3s ease-in-out;
+    }
+
+    .card:hover {
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-header {
+      background-color: #f8f9fa;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .card-header img {
+      width: 40px;
+      height: 40px;
+      margin-right: 10px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .center-btn {
+      display: flex;
+      justify-content: center;
+    }
+
+    .full-width-btn {
+      width: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="d-flex align-items-center mb-4">
+      <img src="/deeplx.png" alt="Translation Icon" class="me-2">
+      <h1 class="mb-0">基于Deeplx的翻译应用程序</h1>
+    </div>
+    <div class="row mb-3">
+      <div class="col-md-6 mb-3">
+        <label for="sourceLang" class="form-label">源语言</label>
+        <select class="form-select" id="sourceLang">
+          <option value="EN">英语</option>
+          <option value="ZH" selected>简体中文</option>
+          <option value="DE">德语</option>
+          <option value="JA">日语</option>
+          <option value="FR">法语</option>
+        </select>
+      </div>
+      <div class="col-md-6 mb-3">
+        <label for="targetLang" class="form-label">目标语言</label>
+        <select class="form-select" id="targetLang">
+          <option value="EN" selected>英语</option>
+          <option value="ZH">简体中文</option>
+          <option value="DE">德语</option>
+          <option value="JA">日语</option>
+          <option value="FR">法语</option>
+        </select>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">源文本</h5>
+          </div>
+          <div class="card-body">
+            <textarea class="form-control" id="sourceText" rows="3">你好,世界!</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="center-btn mb-3">
+      <button class="btn btn-primary full-width-btn" id="translateBtn">翻译</button>
+    </div>
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">翻译结果</h5>
+          </div>
+          <div class="card-body">
+            <textarea class="form-control" id="translatedText" rows="3" readonly></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">其他选择</h5>
+          </div>
+          <div class="card-body">
+            <textarea class="form-control" id="alternatives" rows="3" readonly></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mb-3">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">翻译历史记录</h5>
+        </div>
+        <div class="card-body">
+          <ul id="translationHistory" class="list-group">
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
+
+  <script>
+    const translateBtn = document.getElementById('translateBtn');
+    const sourceText = document.getElementById('sourceText');
+    const sourceLang = document.getElementById('sourceLang');
+    const targetLang = document.getElementById('targetLang');
+    const translatedText = document.getElementById('translatedText');
+    const alternatives = document.getElementById('alternatives');
+    const translationHistory = document.getElementById('translationHistory');
+
+    const savedHistory = JSON.parse(localStorage.getItem('translationHistory')) || [];
+
+    savedHistory.forEach(entry => {
+      const listItem = document.createElement('li');
+      listItem.classList.add('list-group-item');
+      listItem.textContent = `${entry.source} (${entry.sourceLang}) -> ${entry.target} (${entry.targetLang})`;
+      translationHistory.appendChild(listItem);
+    });
+
+    translateBtn.addEventListener('click', () => {
+      const requestData = {
+        text: sourceText.value,
+        source_lang: sourceLang.value,
+        target_lang: targetLang.value
+      };
+
+      fetch('/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      })
+      .then(response => response.json())
+      .then(data => {
+        translatedText.value = data.data;
+        alternatives.value = data.alternatives.join('\n');
+
+        const historyEntry = {
+          source: sourceText.value,
+          sourceLang: sourceLang.value,
+          target: data.data,
+          targetLang: targetLang.value,
+          alternatives: data.alternatives
+        };
+
+        savedHistory.push(historyEntry);
+        localStorage.setItem('translationHistory', JSON.stringify(savedHistory));
+
+        const listItem = document.createElement('li');
+        listItem.classList.add('list-group-item');
+        listItem.textContent = `${historyEntry.source} (${historyEntry.sourceLang}) -> ${historyEntry.target} (${historyEntry.targetLang})`;
+        translationHistory.appendChild(listItem);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
+    });
+  </script>
+</body>
+</html>
