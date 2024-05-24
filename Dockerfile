@@ -13,8 +13,8 @@ RUN npm install --also=dev
 # 复制所有源代码到工作目录
 COPY . .
 
-# 暴露3001端口
-EXPOSE 3001
+# 暴露5000端口
+EXPOSE 5000
 
 # 定义环境变量
 ENV NODE_ENV=production
