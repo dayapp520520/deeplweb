@@ -47,7 +47,19 @@ app.post('/translate', async (req, res) => {
       })
     });
 
-    const data = await apiResponse.json();
+    // Check if the response is OK
+    if (!apiResponse.ok) {
+      const errorText = await apiResponse.text();
+      console.error('API Error:', errorText);
+      return res.status(apiResponse.status).json({ error: errorText });
+    }
+
+    // Print the response text
+    const responseText = await apiResponse.text();
+    console.log('API Response:', responseText);
+
+    // Parse the response text as JSON
+    const data = JSON.parse(responseText);
 
     // Prepare the response
     const response = {
@@ -64,6 +76,7 @@ app.post('/translate', async (req, res) => {
     res.status(500).json({ error: 'An error occurred while translating' });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
