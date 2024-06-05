@@ -86,7 +86,8 @@ app.post('/translate', async (req, res) => {
 
   try {
     // Make a request to the translation API
-    const apiResponse = await fetch('https://api.deeplx.org/translate', {
+    // const apiResponse = await fetch('https://api.deeplx.org/translate', {
+     const apiResponse = await fetch('https://pekmist-deeplx.hf.space/translate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
