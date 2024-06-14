@@ -97,28 +97,31 @@
     <div class="center-btn mb-3">
       <button class="btn btn-primary full-width-btn" id="translateBtn">翻译</button>
     </div>
-    <div class="row mb-3">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">翻译结果</h5>
-          </div>
-          <div class="card-body">
-            <textarea class="form-control" id="translatedText" rows="3" readonly></textarea>
-          </div>
-        </div>
+<div class="row mb-3">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">翻译结果</h5>
       </div>
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">其他选择</h5>
-          </div>
-          <div class="card-body">
-            <textarea class="form-control" id="alternatives" rows="3" readonly></textarea>
-          </div>
-        </div>
+      <div class="card-body">
+        <textarea class="form-control" id="translatedText" rows="3" readonly></textarea>
+        <button class="btn btn-secondary mt-2" id="playTranslatedText">语音朗读</button> <!-- 播放按钮 -->
       </div>
     </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">其他选择</h5>
+      </div>
+      <div class="card-body">
+        <textarea class="form-control" id="alternatives" rows="3" readonly></textarea>
+        <button class="btn btn-secondary mt-2" id="playAlternatives">语音朗读</button> <!-- 播放按钮 -->
+      </div>
+    </div>
+  </div>
+</div>
+
     <div class="mb-3">
       <div class="card">
         <div class="card-header">
@@ -252,107 +255,37 @@
       translationHistory.removeChild(listItem);
     }
   }
-</script><script>
-  const translateBtn = document.getElementById('translateBtn');
-  const sourceText = document.getElementById('sourceText');
-  const sourceLang = document.getElementById('sourceLang');
-  const targetLang = document.getElementById('targetLang');
-  const translatedText = document.getElementById('translatedText');
-  const alternatives = document.getElementById('alternatives');
-  const translationHistory = document.getElementById('translationHistory');
+document.getElementById('playTranslatedText').addEventListener('click', () => {
+  playTTS(translatedText.value, targetLang.value);
+});
 
-  const savedHistory = JSON.parse(localStorage.getItem('translationHistory')) || [];
+document.getElementById('playAlternatives').addEventListener('click', () => {
+  const alternativesText = alternatives.value.split('\n').slice(0, 3); // 只播放前3个替代选项
+  playTTS(alternativesText, targetLang.value);
+});
 
-  savedHistory.forEach(entry => {
-    addHistoryItem(entry);
-  });
-
-  translateBtn.addEventListener('click', () => {
-    const requestData = {
-      text: sourceText.value,
-      source_lang: sourceLang.value,
-      target_lang: targetLang.value
-    };
-
-    fetch(`/translate`, {
+function playTTS(texts, lang) {
+  texts.forEach(text => {
+    fetch('/tts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(requestData)
+      body: JSON.stringify({ text, target_lang: lang })
     })
-    .then(response => response.json())
-    .then(data => {
-      translatedText.value = data.data;
-      alternatives.value = data.alternatives.join('\n');
-
-      const historyEntry = {
-        source: sourceText.value,
-        sourceLang: sourceLang.value,
-        target: data.data,
-        targetLang: targetLang.value,
-        alternatives: data.alternatives,
-        createdAt: new Date().toLocaleString()
-      };
-
-      savedHistory.push(historyEntry);
-      localStorage.setItem('translationHistory', JSON.stringify(savedHistory));
-
-      addHistoryItem(historyEntry);
+    .then(response => response.blob())
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.play();
     })
     .catch(error => {
-      console.error('Error:', error);
+      console.error('TTS Error:', error);
     });
   });
+}
 
-  function addHistoryItem(entry) {
-    const listItem = document.createElement('li');
-    listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
 
-    const summary = document.createElement('div');
-    summary.textContent = `${entry.source.slice(0, 20)}... (${entry.sourceLang}) -> ${entry.target.slice(0, 20)}... (${entry.targetLang}) - ${entry.createdAt}`;
-
-    const buttons = document.createElement('div');
-
-    const detailsBtn = document.createElement('button');
-    detailsBtn.classList.add('btn', 'btn-sm', 'btn-primary', 'me-2');
-    detailsBtn.textContent = '详情';
-    detailsBtn.addEventListener('click', () => showDetails(entry));
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.classList.add('btn', 'btn-sm', 'btn-danger');
-    deleteBtn.textContent = '删除';
-    deleteBtn.addEventListener('click', () => deleteHistory(listItem));
-
-    buttons.appendChild(detailsBtn);
-    buttons.appendChild(deleteBtn);
-
-    listItem.appendChild(summary);
-    listItem.appendChild(buttons);
-
-    translationHistory.appendChild(listItem);
-  }
-
-  function showDetails(entry) {
-    const modalContent = document.getElementById('detailsModalContent');
-    const detailsHtml = `
-      <p><strong>源文本:</strong> ${entry.source} (${entry.sourceLang})</p>
-      <p><strong>目标文本:</strong> ${entry.target} (${entry.targetLang})</p>
-      <p><strong>其他选择:</strong><br>${entry.alternatives.join('<br>')}</p>
-    `;
-    modalContent.innerHTML = detailsHtml;
-    const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
-    detailsModal.show();
-  }
-
-  function deleteHistory(listItem) {
-    if (confirm('确定要删除这条记录吗？')) {
-      const index = Array.from(translationHistory.children).indexOf(listItem);
-      savedHistory.splice(index, 1);
-      localStorage.setItem('translationHistory', JSON.stringify(savedHistory));
-      translationHistory.removeChild(listItem);
-    }
-  }
 </script>
 </body>
 </html>
