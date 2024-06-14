@@ -255,16 +255,12 @@
       translationHistory.removeChild(listItem);
     }
   }
-document.getElementById('playTranslatedText').addEventListener('click', () => {
-  playTTS(translatedText.value, targetLang.value);
-});
-
-document.getElementById('playAlternatives').addEventListener('click', () => {
-  const alternativesText = alternatives.value.split('\n').slice(0, 3); // 只播放前3个替代选项
-  playTTS(alternativesText, targetLang.value);
-});
-
 function playTTS(texts, lang) {
+  // 如果 texts 不是数组，将其转换为数组
+  if (!Array.isArray(texts)) {
+    texts = [texts];
+  }
+
   texts.forEach(text => {
     fetch('/tts', {
       method: 'POST',
@@ -284,6 +280,20 @@ function playTTS(texts, lang) {
     });
   });
 }
+
+// 播放翻译结果
+document.getElementById('playTranslatedText').addEventListener('click', () => {
+  playTTS(translatedText.value, targetLang.value);
+});
+
+// 播放其他选择
+document.getElementById('playAlternatives').addEventListener('click', () => {
+  const alternativesArray = alternatives.value.split('\n');
+  if (alternativesArray.length > 0) {
+    playTTS(alternativesArray, targetLang.value); // 播放所有替代选项
+  }
+});
+
 
 
 </script>
