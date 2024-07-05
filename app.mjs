@@ -34,7 +34,7 @@ app.post('/translate', async (req, res) => {
 
   try {
     // Make a request to the translation API
-    const apiResponse = await fetch('https://pekmist-deeplx.hf.space/translate222222222', {
+    const apiResponse = await fetch('http://pro.gmail-mail.us/translate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
